@@ -14,7 +14,7 @@ def _assert_no_grad(tensor):
 
 class _CTC(Function):
     @staticmethod
-    def forward(ctx, acts, labels, act_lens, label_lens, size_average=False,
+    def forward(ctx, acts, labels, act_lens, label_lens, begins, ends, temperature, size_average=False,
                 length_average=False, blank=0):
         is_cuda = True if acts.is_cuda else False
         acts = acts.contiguous()
@@ -25,6 +25,10 @@ class _CTC(Function):
         loss_func(acts,
                   grads,
                   labels,
+                  label_lens,
+                  begins,
+                  ends,
+                  temperature,
                   label_lens,
                   act_lens,
                   minibatch_size,
@@ -67,7 +71,7 @@ class CTCLoss(Module):
         self.size_average = size_average
         self.length_average = length_average
 
-    def forward(self, acts, labels, act_lens, label_lens):
+    def forward(self, acts, labels, act_lens, label_lens, begins, ends, temperature):
         """
         acts: Tensor of (seqLength x batch x outputDim) containing output from network
         labels: 1 dimensional Tensor containing all the targets of the batch in one sequence
@@ -78,5 +82,5 @@ class CTCLoss(Module):
         _assert_no_grad(labels)
         _assert_no_grad(act_lens)
         _assert_no_grad(label_lens)
-        return self.ctc(acts, labels, act_lens, label_lens, self.size_average,
+        return self.ctc(acts, labels, act_lens, label_lens, begins,  ends, temperature, self.size_average,
                         self.length_average, self.blank)
